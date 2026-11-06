@@ -46,6 +46,14 @@ Source links:
 5. Mainline NFC Java/JNI/Apex signing, CTS/VTS/HCE and SE/OMAPI, NFC hardware tag tests, sleep/resume, eSE/UICC/payment if legally supported, long-term recovery and power/latency baselines.
 6. Old JCOP/loader or firmware update must **not** be run by default or be represented as tested; Android17 does not by itself guarantee eSE hardware or certification.
 
+## Confirmed continuous integration — completed
+
+[GitHub Actions #42311566845](https://github.com/PixelExperience-Reborn/vendor_nxp_opensource_pn5xx_halimpl/actions/runs/42311566845) completed **SUCCESS** on `audit/a17-pn5xx-halimpl-modern-boundary-20261107`.
+
+Verified by the immutable-source checker: exact original 2021 PN5xx tree, archived HIDL interfaces/VINTF, separate JCOP/loader modules and PN81T example; official AOSP17 NXP HAL and vendor AIDL; current NXP 17.07.00 AIDL V2 and NXP V1 service source. Manifest validation passed all 25 approved staged profiles and **29 of 29 adversarial/positive regressions**. The Android17 experimental NFC security candidate remains isolated; `default.xml` unchanged.
+
+**Not verified by this run:** Soong/NDK/Java/APEX compilation, service running on hardware, shipped Xiaomi vendor NFC HAL, eSE/APDU, CTS/VTS, proper NFC eSE/UICC routing, NFC payment certification, firmware selection, or an independent PE-Reborn `mondrian` product.
+
 ## Work recorded in row 170
 
 - Historical/official/current NXP source comparison, pinned host source checks and GitHub Actions CI.
