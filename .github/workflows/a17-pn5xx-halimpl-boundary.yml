@@ -1,0 +1,71 @@
+name: Android17 PN5xx HAL vs NXP AIDL source boundary
+
+on:
+  push:
+    branches:
+      - audit/a17-pn5xx-halimpl-modern-boundary-20261107
+    paths:
+      - 'docs/ANDROID_17_PN5XX_HALIMPL_BOUNDARY_AUDIT.md'
+      - 'audit/check_pn5xx_halimpl_boundary.py'
+      - '.github/workflows/a17-pn5xx-halimpl-boundary.yml'
+  pull_request:
+    paths:
+      - 'docs/ANDROID_17_PN5XX_HALIMPL_BOUNDARY_AUDIT.md'
+      - 'audit/check_pn5xx_halimpl_boundary.py'
+      - '.github/workflows/a17-pn5xx-halimpl-boundary.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  immutable-nfc-source-graph:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout isolated PN5xx HIDL audit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Fetch original historical 2021 PN5xx tree
+        run: |
+          git fetch -q --depth=1 --no-tags origin \
+            +refs/heads/seventeen:refs/remotes/origin/seventeen
+      - name: Fetch official Android17 NFC NXP HAL
+        run: |
+          git init -q "$RUNNER_TEMP/aosp17-nxp"
+          git -C "$RUNNER_TEMP/aosp17-nxp" remote add origin \
+            https://android.googlesource.com/platform/hardware/nxp/nfc
+          git -C "$RUNNER_TEMP/aosp17-nxp" fetch -q --no-tags \
+            --filter=blob:none --depth=1 origin \
+            refs/tags/android-17.0.0_r1:refs/tags/android-17.0.0_r1
+      - name: Fetch current NXP Android17 17.07.00 vendor AIDL source
+        run: |
+          git init -q "$RUNNER_TEMP/nxp17"
+          git -C "$RUNNER_TEMP/nxp17" remote add origin \
+            https://github.com/NXPNFCProject/nfcandroid_nfc_hidlimpl.git
+          git -C "$RUNNER_TEMP/nxp17" fetch -q --no-tags \
+            --filter=blob:none --depth=1 origin \
+            +refs/heads/br_ar_17_aosp_mainline:refs/remotes/origin/br_ar_17_aosp_mainline
+      - name: Fetch independently reviewed PE-Reborn AOSP17 manifest
+        run: |
+          git clone -q --depth=1 \
+            --branch port/a17-aosp17-manifest-20261102 \
+            https://github.com/PixelExperience-Reborn/manifest.git \
+            "$RUNNER_TEMP/manifest"
+      - name: Check exact HAL/SE ownership and source contracts
+        run: |
+          python3 audit/check_pn5xx_halimpl_boundary.py \
+            "$GITHUB_WORKSPACE" "$RUNNER_TEMP/aosp17-nxp" \
+            "$RUNNER_TEMP/nxp17" "$RUNNER_TEMP/manifest"
+      - name: Execute positive and adversarial source-graph tests
+        run: |
+          cd "$RUNNER_TEMP/manifest"
+          python3 -m unittest discover -s tools \
+            -p test_aosp17_manifest_entrypoint.py -v
+      - name: Explicit validation limit
+        run: |
+          echo "PASS means source identity, NXP AIDL/HIDL contract and"
+          echo "manifest graph tests only. This is not a ROM/HAL build."
+          echo "NOT TESTED: Soong, APEX, AIDL service, VINTF/FCM, SELinux,"
+          echo "NFCC firmware, eSE, HCE, CTS/VTS, OTA and actual mondrian."
